@@ -11,7 +11,7 @@ setuptools.setup(
     description="Machine-learning based minimal MLST scheme for bacterial strain typing",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/shanicohen33/minMLST",
     packages=setuptools.find_packages(),
     # install_requires=[
     #     'markdown',
