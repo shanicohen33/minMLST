@@ -14,10 +14,7 @@ setup(
     url="https://github.com/shanicohen33/minMLST",
     packages=find_packages(),
     install_requires=[
-        'shap>=0.28.5',
-        'pandas>=0.19.2',
-        'numpy>=1.16.2',
-        'scikit-learn>=0.20.1'
+        'shap>=0.28.5'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
