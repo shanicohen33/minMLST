@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="minmlst-v6",
+    name="minmlst-v8",
     version="0.0.1",
     author="Shani Cohen",
     author_email="shani.cohen.33@gmail.com",
@@ -15,6 +15,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'shap>=0.28.5'
+        , 'xgboost>=0.82'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
