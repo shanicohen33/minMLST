@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="minmlst-v3",
+    name="minmlst-v4",
     version="0.0.1",
     author="Shani Cohen",
     author_email="shani.cohen.33@gmail.com",
@@ -15,7 +15,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'shap>=0.28.5',
-        'xgboost>=0.82',
+        # 'xgboost>=0.82',
         'pandas>=0.19.2',
         'numpy>=1.16.2',
         'scikit-learn>=0.20.1'
