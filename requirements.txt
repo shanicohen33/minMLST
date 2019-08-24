@@ -1,2 +1,11 @@
 # Requirements for running the notebook
 -e .
+
+shap==0.28.5
+xgboost==0.82
+scipy==1.1.0
+pandas==0.19.2
+numpy==1.16.2
+scikit-learn==0.20.1
+matplotlib==3.0.3
+Markdown==2.6.10
