@@ -30,6 +30,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 
+# todo- find the best way the define the version
 __version__ = '0.0.1'
 
 from minmlst.gene_importance import *
@@ -49,15 +50,27 @@ def test_func_double(x):
     return 2*x
 
 
-def check(x):
-    return check_2(x)
+def gene_importance(data, measures, results_path=None):
+    # min cluster size = 2
+    # todo-define the format for the input (separate to X and ST)
+    # todo- complete missing values
+    # todo-check path is correct
+    # todo- define a unique name for results file
+    # todo- user to set parameters for xgboost training
+    # results = get_gene_importance(X=, y=, measures=measures)
+
+    return
 
 
-## fill missing values
-## separate to X and ST
-## get gene importance:
+def gene_reduction_analysis(data, gene_importance, measure, results_path=None):
+    # todo-define the format for the input (separate to X and ST)
+    # todo- complete missing values
+    # todo-check path is correct
+    # todo- define a unique name for results file
+    # todo- user to set parameters for h-clustering, monte carlo, threshold selection
+    # todo - add parallel computation
 
-# min cluster size = 2
+    return
 
 
 
