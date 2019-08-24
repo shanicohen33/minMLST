@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="minmlst",
+    name="minmlst-v9",
     version="0.0.1",  # get from tools
     author="Shani Cohen",
     author_email="shani.cohen.33@gmail.com",
