@@ -1,10 +1,10 @@
+import minmlst.config as c
 import numpy as np
 import xgboost as xgb
 import pandas as pd
 import shap
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
-import minmlst.config as c
 
 
 def calc_shap_values(bst, X, y):
@@ -25,8 +25,7 @@ def calc_importance(bst, measure):
     return gene_importance
 
 
-# todo- filter singletones
-def get_gene_importance(X, y, measures):
+def get_gene_importance(X, y, measures, max_depth, learning_rate, stop_training):
     # encode y labels
     lbl = LabelEncoder()
     lbl.fit(y)
@@ -52,27 +51,36 @@ def get_gene_importance(X, y, measures):
     # train an xgboost model
     params = {
         'seed': c.SEED,
-        'objective': c.OBJECTIVE,  #todo- to be set by the user
+        'objective': c.OBJECTIVE,
         'num_class': n_classes,
-        'max_depth': c.MAX_DEPTH,  #todo- to be set by the user
-        'eta': c.LEARNING_RATE,  #todo- to be set by the user
+        'max_depth': max_depth,
+        'eta': learning_rate,
         'verbose_eval': True,
         "silent": 1,
-        'eval_metric': c.EVAL_METRIC  #todo- to be set by the user
+        'eval_metric': c.EVAL_METRIC
     }
     watchlist = [(dtrain, 'train'), (dtest, 'test')]
     evals_result = {}
 
-    print("training a model")
-    bst = xgb.train(
-        params=params,
-        dtrain=dtrain,
-        num_boost_round=c.NUM_BOOST_ROUND, #todo- to be set by the user
-        # early_stopping_rounds=c.EARLY_STOPPING_ROUNDS,
-        evals=watchlist,
-        verbose_eval=10,
-        evals_result=evals_result
-    )
+    print("Training a model")
+    if stop_training[0] == 'early_stopping_rounds':
+        bst = xgb.train(
+            early_stopping_rounds=stop_training[1],
+            params=params,
+            dtrain=dtrain,
+            evals=watchlist,
+            verbose_eval=10,
+            evals_result=evals_result
+        )
+    else:
+        bst = xgb.train(
+            num_boost_round=stop_training[1],
+            params=params,
+            dtrain=dtrain,
+            evals=watchlist,
+            verbose_eval=10,
+            evals_result=evals_result
+        )
 
     print(f"calculating gene importance by:")
     scores_df = pd.DataFrame()
