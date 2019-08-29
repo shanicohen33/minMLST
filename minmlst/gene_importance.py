@@ -1,10 +1,11 @@
-import minmlst.config as c
 import numpy as np
 import xgboost as xgb
 import pandas as pd
 import shap
+from collections import OrderedDict
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
+import minmlst.config as c
 
 
 def calc_shap_values(bst, X, y):
@@ -25,7 +26,7 @@ def calc_importance(bst, measure):
     return gene_importance
 
 
-def get_gene_importance(X, y, measures, max_depth, learning_rate, stop_training):
+def get_gene_importance(X, y, measures, max_depth, learning_rate, stopping_method, stopping_rounds):
     # encode y labels
     lbl = LabelEncoder()
     lbl.fit(y)
@@ -63,9 +64,9 @@ def get_gene_importance(X, y, measures, max_depth, learning_rate, stop_training)
     evals_result = {}
 
     print("Training a model")
-    if stop_training[0] == 'early_stopping_rounds':
+    if stopping_method == 'early_stopping_rounds':
         bst = xgb.train(
-            early_stopping_rounds=stop_training[1],
+            early_stopping_rounds=stopping_rounds,
             params=params,
             dtrain=dtrain,
             evals=watchlist,
@@ -74,7 +75,7 @@ def get_gene_importance(X, y, measures, max_depth, learning_rate, stop_training)
         )
     else:
         bst = xgb.train(
-            num_boost_round=stop_training[1],
+            num_boost_round=stopping_rounds,
             params=params,
             dtrain=dtrain,
             evals=watchlist,
@@ -82,18 +83,17 @@ def get_gene_importance(X, y, measures, max_depth, learning_rate, stop_training)
             evals_result=evals_result
         )
 
-    print(f"calculating gene importance by:")
+    print(f"Calculating gene importance by:")
     scores_df = pd.DataFrame()
-    for m in measures:
+    for m in list(OrderedDict.fromkeys(measures)):
         if m == "shap":
             scores = calc_shap_values(bst=bst, X=X, y=y_enc)
         else:
             scores = calc_importance(bst=bst, measure=m)
         if scores_df.empty:
             scores_df = scores
-            scores_df = scores_df.sort_values(by=scores_df.columns.values[1], ascending=True).reset_index(drop=True)
-            # todo- sort again with ascending=False before clustering
         else:
             scores_df = pd.merge(scores_df, scores, how='outer', on='gene')
+    scores_df = scores_df.fillna(0).sort_values(by=scores_df.columns.values[1], ascending=False).reset_index(drop=True)
 
     return scores_df

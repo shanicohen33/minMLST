@@ -25,6 +25,7 @@ import xgboost as xgb
 import pandas as pd
 import xgboost as xgb
 from xgboost import XGBClassifier
+import collections
 import time
 from os.path import join
 import pickle
@@ -48,17 +49,19 @@ def test_func_double(x):
 
 
 def gene_importance(data: pd.DataFrame, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARNING_RATE,
-                    stop_training=('num_boost_round', c.NUM_BOOST_ROUND)):
+                    stopping_method=c.STOPPING_METHOD, stopping_rounds = c.NUM_BOOST_ROUND):
     '''
 
     :param data (DataFrame): (n-1) columns of genes, last column (n) must contain the ST (strain type).
                              Each row represents a profile of a single isolate.
                              Data types should be integers only.
                              Missing values should be represented as 0. No missing values are allowed for the ST.
-    :param measures (list):
-    :param max_depth (int): Maximum tree depth for base learners.
-    :param learning_rate (float): Boosting learning rate
-    :param stop_training (tuple):
+    :param measures (array): an array containing at least one of the following measures (str type):
+                            ['shap', 'weight', 'gain', 'cover', 'total_gain', 'total_cover'].
+    :param max_depth (int): Maximum tree depth for base learners (default = 6).
+    :param learning_rate (float): Boosting learning rate (default = 0.3).
+    :param stopping_method (str): 'num_boost_round' or 'early_stopping_rounds' (default = 'num_boost_round').
+    :param stopping_rounds (int): Number of rounds for boosting or early stopping (default = 100).
     :return:
     '''
     try:
@@ -77,20 +80,26 @@ def gene_importance(data: pd.DataFrame, measures, max_depth=c.MAX_DEPTH, learnin
             raise ValueError(f"Error: strain-type column (last) contains missing values, i.e value = 0")
         # measures
         valid_measures = ['shap', 'weight', 'gain', 'cover', 'total_gain', 'total_cover']
-        invalid = list(np.setdiff1d(measures, valid_measures))
-        if len(invalid) > 0:
-            raise ValueError(f"Error: 'measures' contains invalid elements {invalid}. Valid elements are: {valid_measures}")
+        if not isinstance(measures, (collections.Sequence, np.ndarray)) or len(measures) == 0:
+            raise ValueError(f"Error: 'measures' must be a non-empty array. Valid elements are: {valid_measures}.")
+        # measures
+        for m in measures:
+            if m not in valid_measures:
+                raise ValueError(f"Error: 'measures' contains invalid element {m}. Valid elements are: {valid_measures}.")
         # max_depth
         if not np.issubdtype(type(max_depth), np.integer):
             raise ValueError(
                 f"Error: 'max_depth' must be of type int, got {type(max_depth)}")
         # learning_rate
-        if not np.issubdtype(type(learning_rate), np.float):
+        if not isinstance(learning_rate, float):
             raise ValueError(
                 f"Error: 'learning_rate' must be of type float, got {type(learning_rate)}")
-        # stop_training
-        # todo- complete
-        stop_training = ('num_boost_round', c.NUM_BOOST_ROUND)
+        # stopping_method
+        if stopping_method not in ['num_boost_round', 'early_stopping_rounds']:
+            raise ValueError(f"Error: 'stopping_method' must be 'num_boost_round' or 'early_stopping_rounds' (type str)")
+        # stopping_rounds
+        if not np.issubdtype(type(stopping_rounds), np.integer):
+            raise ValueError(f"Error: 'stopping_rounds' must be of type int, got {type(stopping_rounds)}")
 
         print(f"Fliter singletones (strain-types with a single isolate only)")
         st_lst = data.iloc[:, -1]
@@ -99,7 +108,7 @@ def gene_importance(data: pd.DataFrame, measures, max_depth=c.MAX_DEPTH, learnin
         print(f"   {len(data)} isolates remained out of {len(st_lst)}")
 
         X, y = data.iloc[:, :-1], data.iloc[:, -1]
-        results = get_gene_importance(X, y, measures, max_depth, learning_rate, stop_training)
+        results = get_gene_importance(X, y, measures, max_depth, learning_rate, stopping_method, stopping_rounds)
         return results
 
     except ValueError as ve:
@@ -113,6 +122,7 @@ def gene_reduction_analysis(data, gene_importance, measure, results_path=None):
     # todo- define a unique name for results file
     # todo- user to set parameters for h-clustering, monte carlo, threshold selection
     # todo - add parallel computation
+    # todo- sort again (with ascending=False?) before clustering
 
     return
 
