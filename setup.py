@@ -1,11 +1,24 @@
 from setuptools import setup, find_packages
+import codecs
+import re
+from os.path import join, abspath, dirname
+
+
+def get_version(*file_paths):
+    with codecs.open(join(abspath(dirname(__file__)), *file_paths), 'r') as fp:
+        file = fp.read()
+    version = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", file, re.M)
+    if version:
+        return version.group(1)
+    raise RuntimeError("Version string wasn't found.")
+
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="minmlst-v9",
-    version="0.0.1",  # get from tools
+    name="minmlst-v11",
+    version=get_version("minmlst", "__init__.py"),
     author="Shani Cohen",
     author_email="shani.cohen.33@gmail.com",
     description="Machine-learning based minimal MLST scheme for bacterial strain typing",
@@ -23,3 +36,7 @@ setup(
         "Operating System :: Microsoft :: Windows",
     ],
 )
+
+
+
+

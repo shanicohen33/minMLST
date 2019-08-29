@@ -34,21 +34,7 @@ from sklearn.preprocessing import LabelEncoder
 import numpy as np
 
 
-def test_func_double(x):
-    print('XGBClassifier start')
-    model = XGBClassifier(random_state=7, nthread=-1, importance_type='gain')
-    print('XGBClassifier end')
-
-    print('xgb.DMatrix start')
-    X_train = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-    y_train = np.array([1, 1, 0])
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    print('xgb.DMatrix end')
-
-    return 2*x
-
-
-def gene_importance(data: pd.DataFrame, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARNING_RATE,
+def gene_importance(data, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARNING_RATE,
                     stopping_method=c.STOPPING_METHOD, stopping_rounds = c.NUM_BOOST_ROUND):
     '''
 
@@ -82,7 +68,6 @@ def gene_importance(data: pd.DataFrame, measures, max_depth=c.MAX_DEPTH, learnin
         valid_measures = ['shap', 'weight', 'gain', 'cover', 'total_gain', 'total_cover']
         if not isinstance(measures, (collections.Sequence, np.ndarray)) or len(measures) == 0:
             raise ValueError(f"Error: 'measures' must be a non-empty array. Valid elements are: {valid_measures}.")
-        # measures
         for m in measures:
             if m not in valid_measures:
                 raise ValueError(f"Error: 'measures' contains invalid element {m}. Valid elements are: {valid_measures}.")
@@ -91,7 +76,7 @@ def gene_importance(data: pd.DataFrame, measures, max_depth=c.MAX_DEPTH, learnin
             raise ValueError(
                 f"Error: 'max_depth' must be of type int, got {type(max_depth)}")
         # learning_rate
-        if not isinstance(learning_rate, float):
+        if not np.issubdtype(type(learning_rate), np.floating):
             raise ValueError(
                 f"Error: 'learning_rate' must be of type float, got {type(learning_rate)}")
         # stopping_method
@@ -115,16 +100,71 @@ def gene_importance(data: pd.DataFrame, measures, max_depth=c.MAX_DEPTH, learnin
         print(ve)
 
 
-def gene_reduction_analysis(data, gene_importance, measure, results_path=None):
-    # todo-define the format for the input (separate to X and ST)
-    # todo- complete missing values
-    # todo-check path is correct
-    # todo- define a unique name for results file
-    # todo- user to set parameters for h-clustering, monte carlo, threshold selection
-    # todo - add parallel computation
-    # todo- sort again (with ascending=False?) before clustering
+def gene_reduction_analysis(data, gene_importance, measure):
+    '''
 
-    return
+    :param data (DataFrame): (n-1) columns of genes, last column (n) must contain the ST (strain type).
+                             Each row represents a profile of a single isolate.
+                             Data types should be integers only.
+                             Missing values should be represented as 0. No missing values are allowed for the ST.
+    :param gene_importance (DataFrame): Gene importance results in the format returned by 'gene_importance' function.
+    :param measure (str): The measure according to which gene importance will be defined. measure must be included in
+                          the 'gene_importance' results.
+                          measure must be either 'shap', 'weight', 'gain', 'cover', 'total_gain' or 'total_cover'.
+    :return:
+    '''
+    try:
+        print("Input validation")
+        # data
+        if not isinstance(data, pd.DataFrame):
+            raise ValueError(f"Error: 'data' must be of type <class 'pandas.core.frame.DataFrame'>,"
+                             f" got {type(data)}.")
+        elif data.empty:
+            raise ValueError(f"Error: 'data' is empty.")
+        invalid = [not (np.issubdtype(t, np.integer)) for t in data.dtypes]
+        if sum(invalid) > 0:
+            raise ValueError(f"Error: 'data' contains non-integer elements. Invalid columns and types:"
+                             f"\n{data.dtypes[invalid]}")
+        if 0 in list(data.iloc[:, -1]):
+            raise ValueError(f"Error: strain-type column (last) contains missing values, i.e value = 0")
+        # measure
+        valid_measures = ['shap', 'weight', 'gain', 'cover', 'total_gain', 'total_cover']
+        if measure not in valid_measures:
+            raise ValueError(f"Error: measure must be either 'shap', 'weight', 'gain', 'cover', 'total_gain' "
+                             f"or 'total_cover'.")
+        # gene_importance
+        if not isinstance(gene_importance, pd.DataFrame):
+            raise ValueError(f"Error: 'gene_importance' must be in the format returned by 'gene_importance' function.")
+        gi_cols = gene_importance.columns.values
+        if len(gi_cols) < 2 or gi_cols[0] != 'gene':
+            raise ValueError(f"Error: 'gene_importance' must be in the format returned by 'gene_importance' function.")
+        gi_measures = [col.replace("importance_by_", "") for col in gi_cols[1:]]
+        for m in gi_measures:
+            if m not in valid_measures:
+                raise ValueError(f"Error: 'gene_importance' must be in the format returned by 'gene_importance' function.")
+        invalid = [not (np.issubdtype(t, np.number)) for t in gene_importance.dtypes[1:]]
+        if sum(invalid) > 0:
+            raise ValueError(f"Error: 'gene_importance' contains non-numeric importance scores. "
+                             f"Invalid columns and types: \n{[False] + gene_importance.dtypes[invalid]}")
+        gi_genes = set(gene_importance.iloc[:, 0])
+        data_genes = set(data.columns.values[:-1])
+        if len(gi_genes - data_genes) + len(data_genes - gi_genes) > 0:
+            raise ValueError(f"Error: genes in 'data' and 'gene_importance' do not match")
+        # measure
+        if measure not in gi_measures:
+            raise ValueError(f"Error: 'measure' must be included in the 'gene_importance' results -> {gi_measures}")
+
+        # todo- sort again (with ascending=False?) before clustering
+        # todo- data is numeric (for sort values) remove <= 0?
+        # todo- user to set parameters for h-clustering, monte carlo, threshold selection
+        # todo - add parallel computation
+
+        return
+
+    except ValueError as ve:
+        print(ve)
+
+
 
 
 
