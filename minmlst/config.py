@@ -1,4 +1,3 @@
-# todo- add joblib and multiprocessing to imports
 import multiprocessing as mp
 
 SEED = 10
@@ -15,12 +14,18 @@ EARLY_STOPPING_ROUNDS = 5
 # endregion
 
 # region params hierarchical clustering
+REDUCTION = 0.2
+PERCENTILES = [0.5, 1]
+FIND_THRESH = False
+SIMULATED_SAMPLES = 0
+PLOT_RESULTS = True
+CORES = mp.cpu_count()
+
 DISTANCE_METRIC = 'matching'  # 'hamming'
 # Distance is normalized so it ranges between [0, 1]
 # (proportion of those vector elements between two n-vectors u and v which disagree.)
 HC_METHOD = 'complete'
 # 'complete' - Farthest Point Algorithm
 MAX_PERCENTILE = 20
-# todo- set to 1000
-SIMULATION_NUM_OF_SAMPLES = 10 #1000
+# endregion
 

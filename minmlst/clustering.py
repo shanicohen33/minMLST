@@ -27,7 +27,20 @@ def save_temp_files(percentiles, thresholds, z):
     print(f"elapsed time linkage.dump: {time.time() - start21}")
 
 
-def hierarchical_clustering(ST, X, num_of_genes, gene_importance, percentiles, find_thresh, simulation):
+def simulation_study_ARI(partition_A, partition_B, ARI_0, num_of_samples):
+    ARI_dist = np.empty(num_of_samples, dtype=float)
+    for i in range(num_of_samples):
+        ARI_dist[i] = adjusted_rand_score(permutation(partition_A), permutation(partition_B))
+    m = np.average(ARI_dist)
+    std = np.std(ARI_dist)
+    NARI_0 = (ARI_0 - m) / std
+    NARI_dist = (ARI_dist - m) / std
+    p_value = len(NARI_dist[NARI_dist > NARI_0]) / len(NARI_dist)
+
+    return p_value
+
+
+def hierarchical_clustering(ST, X, num_of_genes, gene_importance, percentiles, find_thresh, simulated_samples):
     print(f"num_of_genes: {num_of_genes}")
     res = {'num_of_genes': num_of_genes}
     curr_genes = gene_importance['gene'][0:num_of_genes]
@@ -62,24 +75,11 @@ def hierarchical_clustering(ST, X, num_of_genes, gene_importance, percentiles, f
     for idx, predicted_ST in enumerate(predicted_ST_lst):
         ARI = adjusted_rand_score(ST, predicted_ST)
         res.update({f"ARI_prec_{percentiles[idx]}": ARI})
-        if simulation:
-            p_value = simulation_study_ARI(ST, predicted_ST, ARI)
+        if simulated_samples > 0:
+            p_value = simulation_study_ARI(ST, predicted_ST, ARI, simulated_samples)
             res.update({f"pv_prec_{percentiles[idx]}": p_value})
 
     return res
-
-
-def simulation_study_ARI(partition_A, partition_B, ARI_0):
-    ARI_dist = np.empty(c.SIMULATION_NUM_OF_SAMPLES, dtype=float)
-    for i in range(c.SIMULATION_NUM_OF_SAMPLES):
-        ARI_dist[i] = adjusted_rand_score(permutation(partition_A), permutation(partition_B))
-    m = np.average(ARI_dist)
-    std = np.std(ARI_dist)
-    NARI_0 = (ARI_0 - m) / std
-    NARI_dist = (ARI_dist - m) / std
-    p_value = len(NARI_dist[NARI_dist > NARI_0]) / len(NARI_dist)
-
-    return p_value
 
 
 def reorder_analysis_res(df):

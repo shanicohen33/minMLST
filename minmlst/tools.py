@@ -21,113 +21,17 @@ del hard_dependencies, dependency, missing_dependencies
 from minmlst.gene_importance import *
 from minmlst.clustering import *
 from minmlst.tests import *
-import shap
-import xgboost as xgb
 import pandas as pd
-import xgboost as xgb
-from xgboost import XGBClassifier
-import collections
-import time
-from os.path import join
-import pickle
-from sklearn.model_selection import StratifiedKFold
-from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import os
-# todo- add joblib and multiprocessing to imports
+# todo- add joblib, multiprocessing, matplotlib(?) to imports
 from joblib import Parallel, delayed
 import multiprocessing as mp
+import matplotlib.pyplot as plt
 # region set random seeds
 os.environ['PYTHONHASHSEED'] = '0'
 np.random.seed(c.SEED)
-# todo-check if random is used
-# rn.seed(c.SEED)
 # endregion set random seeds
-
-
-def validate_data(data):
-    if not isinstance(data, pd.DataFrame):
-        raise ValueError(f"Error: 'data' must be of type <class 'pandas.core.frame.DataFrame'>,"
-                         f" got {type(data)}.")
-    elif data.empty:
-        raise ValueError(f"Error: 'data' is empty.")
-    invalid = [not (np.issubdtype(t, np.integer)) for t in data.dtypes]
-    if sum(invalid) > 0:
-        raise ValueError(f"Error: 'data' contains non-integer elements. Invalid columns and types:"
-                         f"\n{data.dtypes[invalid]}")
-    if 0 in list(data.iloc[:, -1]):
-        raise ValueError(f"Error: strain-type column (last) contains missing values, i.e value = 0")
-
-
-def validate_input_gi(data, measures, max_depth, learning_rate, stopping_method, stopping_rounds):
-    print("Input validation")
-    # data
-    validate_data(data)
-    # measures
-    valid_measures = ['shap', 'weight', 'gain', 'cover', 'total_gain', 'total_cover']
-    if not isinstance(measures, (collections.Sequence, np.ndarray)) or len(measures) == 0:
-        raise ValueError(f"Error: 'measures' must be a non-empty array. Valid elements are: {valid_measures}.")
-    for m in measures:
-        if m not in valid_measures:
-            raise ValueError(f"Error: 'measures' contains invalid element {m}. Valid elements are: {valid_measures}.")
-    # max_depth
-    if not np.issubdtype(type(max_depth), np.integer):
-        raise ValueError(f"Error: 'max_depth' must be of type int, got {type(max_depth)}")
-    # learning_rate
-    if not np.issubdtype(type(learning_rate), np.floating):
-        raise ValueError(f"Error: 'learning_rate' must be of type float, got {type(learning_rate)}")
-    # stopping_method
-    if stopping_method not in ['num_boost_round', 'early_stopping_rounds']:
-        raise ValueError(f"Error: 'stopping_method' must be 'num_boost_round' or 'early_stopping_rounds' (type str)")
-    # stopping_rounds
-    if not np.issubdtype(type(stopping_rounds), np.integer):
-        raise ValueError(f"Error: 'stopping_rounds' must be of type int, got {type(stopping_rounds)}")
-
-
-def validate_input_gra(data, gene_importance, measure, reduction, percentiles, n_jobs):
-    print("Input validation")
-    # data
-    validate_data(data)
-    # measure
-    valid_measures = ['shap', 'weight', 'gain', 'cover', 'total_gain', 'total_cover']
-    if measure not in valid_measures:
-        raise ValueError(f"Error: measure must be either 'shap', 'weight', 'gain', 'cover', 'total_gain' "
-                         f"or 'total_cover'.")
-    # gene_importance
-    if not isinstance(gene_importance, pd.DataFrame):
-        raise ValueError(f"Error: 'gene_importance' must be in the format returned by 'gene_importance' function.")
-    gi_cols = gene_importance.columns.values
-    if len(gi_cols) < 2 or gi_cols[0] != 'gene':
-        raise ValueError(f"Error: 'gene_importance' must be in the format returned by 'gene_importance' function.")
-    gi_measures = [col.replace("importance_by_", "") for col in gi_cols[1:]]
-    for m in gi_measures:
-        if m not in valid_measures:
-            raise ValueError(f"Error: 'gene_importance' must be in the format returned by 'gene_importance' function.")
-    invalid = [not (np.issubdtype(t, np.number)) for t in gene_importance.dtypes[1:]]
-    if sum(invalid) > 0:
-        raise ValueError(f"Error: 'gene_importance' contains non-numeric importance scores. "
-                         f"Invalid columns and types: \n{[False] + gene_importance.dtypes[invalid]}")
-    gi_genes = set(gene_importance.iloc[:, 0])
-    data_genes = set(data.columns.values[:-1])
-    if len(gi_genes - data_genes) + len(data_genes - gi_genes) > 0:
-        raise ValueError(f"Error: genes in 'data' and 'gene_importance' do not match.")
-    # measure
-    if measure not in gi_measures:
-        raise ValueError(f"Error: 'measure' must be included in the 'gene_importance' results -> {gi_measures}.")
-    # reduction
-    if (not np.issubdtype(type(reduction), np.number)) or (reduction <= 0):
-        raise ValueError(f"Error: 'reduction' must be a positive number. Use int for number of genes, or float for"
-                         f" percentage of genes to be reduced.")
-    # percentiles
-    # todo- check if it's a list
-    # todo- check if all elements are numbers between 0< to <100
-    invalid = [not (np.issubdtype(type(p), np.number)) for p in percentiles]
-    if sum(invalid) > 0:
-        raise ValueError(f"Error: 'gene_importance' contains non-numeric importance scores. "
-                         f"Invalid columns and types: \n{[False] + gene_importance.dtypes[invalid]}")
-    # n_jobs
-    if not np.issubdtype(type(n_jobs), np.integer):
-        raise ValueError(f"Error: 'n_jobs' must be of type int, got {type(n_jobs)}")
 
 
 def gene_importance(data, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARNING_RATE,
@@ -164,8 +68,33 @@ def gene_importance(data, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARN
         print(ve)
 
 
+#todo (Isana)- should we return also the number of clusters/the clustering structure it self for a selected num_of_genes + threshold
+#todo (Isana)- should we add p.v. to the plot?
+def plot_res(analysis_res):
+    title = 'Results per number of genes'
+    x_label = 'Number of genes'
+    y_label = 'Adjusted Rand Index  or  p-value'
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+    ax.set_title(title)
+    ax.set_ylabel(y_label)
+    ax.set_xlabel(x_label)
+
+    x_col = 'num_of_genes'
+    y_cols = list(analysis_res.columns.values)
+    y_cols.remove(x_col)
+    for y_col in y_cols:
+        ax.plot(analysis_res[x_col], analysis_res[y_col], label=y_col, marker='o', linestyle='--')
+    ax.legend(frameon=True)
+    plt.show()
+
+
 def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, percentiles=[0.5, 1],
-                            find_recommended_thresh=False, simulation=False, plot_results=True, n_jobs=mp.cpu_count()):
+                            find_recommended_thresh=False, simulated_samples=0, plot_results=True, n_jobs=mp.cpu_count()):
     '''
 
     :param data (DataFrame): (n-1) columns of genes, last column (n) must contain the ST (strain type).
@@ -179,8 +108,7 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
     :return:
     '''
     try:
-        # todo- user to set parameters for h-clustering, monte carlo, threshold selection
-        validate_input_gra(data, gene_importance, measure, reduction, percentiles, n_jobs)
+        validate_input_gra(data, gene_importance, measure, reduction, percentiles, simulated_samples, n_jobs)
 
         # remove non-informative genes
         gi = gene_importance[gene_importance['importance_by_' + measure] > 0]
@@ -197,22 +125,21 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
         print("Hierarchical clustering")
         try:
             results = Parallel(n_jobs=n_jobs, verbose=5, max_nbytes=None)(
-                delayed(hierarchical_clustering)(ST, X, num_of_genes, gene_importance, percentiles, find_recommended_thresh,
-                                                 simulation) for num_of_genes in lst)
+                delayed(hierarchical_clustering)(ST, X, num_of_genes, gene_importance, percentiles,
+                                                 find_recommended_thresh, simulated_samples) for num_of_genes in lst)
         except Exception as ex:
             print(f"Error - unable to perform parallel computing due to: {ex}")
             print(f"Running serial computation instead")
             results = []
             for num_of_genes in lst:
-                r = hierarchical_clustering(ST, X, num_of_genes, gene_importance, percentiles, find_recommended_thresh, simulation)
+                r = hierarchical_clustering(ST, X, num_of_genes, gene_importance, percentiles, find_recommended_thresh, simulated_samples)
                 results = results + [r]
 
         analysis_res = pd.DataFrame(results)
         analysis_res = reorder_analysis_res(analysis_res)
 
-        # todo- plot results
-        # if plot_results:
-        #     print()
+        if plot_results:
+            plot_res(analysis_res)
 
         return analysis_res
 
