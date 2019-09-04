@@ -1,3 +1,4 @@
+import minmlst.config as c
 import numpy as np
 import xgboost as xgb
 import pandas as pd
@@ -5,7 +6,6 @@ import shap
 from collections import OrderedDict
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
-import minmlst.config as c
 
 
 def calc_shap_values(bst, X, y):
