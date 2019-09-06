@@ -24,7 +24,6 @@ from minmlst.tests import *
 import pandas as pd
 import numpy as np
 import os
-# todo- add joblib, multiprocessing, matplotlib(?) to imports
 from joblib import Parallel, delayed
 import multiprocessing as mp
 import matplotlib.pyplot as plt
@@ -137,6 +136,9 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
 
         analysis_res = pd.DataFrame(results)
         analysis_res = reorder_analysis_res(analysis_res)
+
+        if find_recommended_thresh:
+            analysis_res = find_threshold(analysis_res, simulated_samples)
 
         if plot_results:
             plot_res(analysis_res)

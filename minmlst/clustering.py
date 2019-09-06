@@ -5,26 +5,77 @@ from sklearn.metrics.cluster import adjusted_rand_score
 import numpy as np
 from numpy.random import permutation
 import time
-# todo- make sure pickle is installed
+import pandas as pd
 import pickle
+import os
+from os.path import join, exists
+from minmlst.utils import *
 
 
-def save_temp_files(percentiles, thresholds, z):
+def save_temp_files(percentiles, thresholds, z, num_of_genes):
+    # todo- make sure parallel can work with this (cosider removing to outer functions + delete of this folder)
+    print(c.TEMP_FOLDER)
+    create_dir_if_not_exists(c.TEMP_FOLDER)
+
     thres_per_perc = dict(zip(percentiles, thresholds))
-
-    # save z thres_per_perc
-    # todo- change name (according to number of genes)
-    start21 = time.time()
-    with open('thres_per_perc' '.pickle', 'wb') as handle:
+    with open(join(c.TEMP_FOLDER, f"thresholds_{num_of_genes}" + '.pickle'), 'wb') as handle:
         pickle.dump(thres_per_perc, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    print(f"elapsed time linkage.dump: {time.time() - start21}")
-
-    # save z param
-    # todo- change name (according to number of genes)
-    start21 = time.time()
-    with open('z' '.pickle', 'wb') as handle:
+    with open(join(c.TEMP_FOLDER, f"z_{num_of_genes}" + '.pickle'), 'wb') as handle:
         pickle.dump(z, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    print(f"elapsed time linkage.dump: {time.time() - start21}")
+
+
+def is_next_better(best, next):
+    #todo- check when next is worst (should "sum" both better and worst)
+    #todo- check in "how much" is it better or worst
+    # sum_better = sum(np.array(best) < np.array(next))
+    # if sum_better > 0:
+    #     return True
+    #todo-change to False
+    return True
+
+
+def calc_ARI_pv_vec(perc, simulated_samples):
+    print("clac ARI")
+    res = {"perc": perc, "ARI_vec": perc}
+    if simulated_samples > 0:
+        print("clac also pv")
+        res.update({"pv_vec": perc})
+    return res
+
+
+# todo- at each iteration check if the next result (ARI line) is better than the previous.
+#  if next is better, make it the basline and check the next 'next'. if not, return the basline (ari +pv) of the baseline
+#  in the format of "results" sent to the function.
+# todo- for each number of genes we already have the dendogram, we just need to create clustering and clac ari +pv (if asked)
+#  it should be an ITERATIVE procees over the potetial percentails. per potential percetile - PARALLEL to calc ari + ov per num of genes.
+#  maybe call h clustering with a certain potential percentaile and join its output
+def find_threshold(results, simulated_samples):
+    best_perc = c.PERCENTILES_TO_CHECK[0]
+    next_perc = c.PERCENTILES_TO_CHECK[1]
+    _best = {"perc": best_perc, "ARI_vec": results[f"ARI_perc_{format(best_perc, '.15g')}"]}
+    _next = {"perc": next_perc, "ARI_vec": results[f"ARI_perc_{format(next_perc, '.15g')}"]}
+    if simulated_samples > 0:
+        _best.update({"pv_vec": results[f"pv_perc_{format(best_perc, '.15g')}"]})
+        _next.update({"pv_vec": results[f"pv_perc_{format(next_perc, '.15g')}"]})
+    # todo- implement is_next_better
+    next_better = is_next_better(_best["ARI_vec"], _next["ARI_vec"])
+
+    potential_perc = list(c.PERCENTILES_TO_CHECK[2:])
+    while next_better and potential_perc:
+        _best = _next
+        next_perc = potential_perc.pop(0)
+        #todo- implement calc_ARI_pv_vec (parallel per num of genes)
+        _next = calc_ARI_pv_vec(next_perc, simulated_samples)
+        next_better = is_next_better(_best["ARI_vec"], _next["ARI_vec"])
+        print(f"_best: {_best}, _next:{_next}")
+    if next_better:
+        _best = _next
+
+    res = {'num_of_genes': results['num_of_genes'], f"ARI_perc_{format(_best['perc'], '.15g')}": _best["ARI_vec"]}
+    if simulated_samples > 0:
+        res.update({f"pv_perc_{format(_best['perc'], '.15g')}": _best["pv_vec"]})
+
+    return pd.DataFrame(res)
 
 
 def simulation_study_ARI(partition_A, partition_B, ARI_0, num_of_samples):
@@ -59,25 +110,24 @@ def hierarchical_clustering(ST, X, num_of_genes, gene_importance, percentiles, f
     # todo- finish implementation for finding threshold
     if find_thresh:
         start222 = time.time()
-        percentiles = np.arange(.5, c.MAX_PERCENTILE + 0.5, 0.5)
+        percentiles = c.PERCENTILES_TO_CHECK
         thresholds = np.percentile(a=distances, q=percentiles)
         print(f"elapsed time percentile: {time.time() - start222}")
-        save_temp_files(percentiles, thresholds, z)
+        save_temp_files(percentiles, thresholds, z, num_of_genes)
 
         # In case 'find_recommended_thresh' = True ---> percentiles 0.5 and 1 are calculated as a baseline
-        baseline_idx = 2
-        percentiles = percentiles[:baseline_idx]
-        predicted_ST_lst = [fcluster(Z=z, t=t, criterion='distance') for t in thresholds[:baseline_idx]]
+        percentiles = percentiles[:2]
+        predicted_ST_lst = [fcluster(Z=z, t=t, criterion='distance') for t in thresholds[:2]]
     else:
         thresholds = np.percentile(a=distances, q=percentiles)
         predicted_ST_lst = [fcluster(Z=z, t=t, criterion='distance') for t in thresholds]
 
     for idx, predicted_ST in enumerate(predicted_ST_lst):
         ARI = adjusted_rand_score(ST, predicted_ST)
-        res.update({f"ARI_prec_{percentiles[idx]}": ARI})
+        res.update({f"ARI_perc_{format(percentiles[idx], '.15g')}": ARI})
         if simulated_samples > 0:
             p_value = simulation_study_ARI(ST, predicted_ST, ARI, simulated_samples)
-            res.update({f"pv_prec_{percentiles[idx]}": p_value})
+            res.update({f"pv_perc_{format(percentiles[idx], '.15g')}": p_value})
 
     return res
 
