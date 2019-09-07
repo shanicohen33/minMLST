@@ -69,8 +69,8 @@ def gene_importance(data, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARN
 
 #todo (Isana)- should we return also the number of clusters/the clustering structure it self for a selected num_of_genes + threshold
 #todo (Isana)- should we add p.v. to the plot?
-def plot_res(analysis_res):
-    title = 'Results per number of genes'
+def plot_res(analysis_res, measure):
+    title = f'Results per number of genes (measure = {measure})'
     x_label = 'Number of genes'
     y_label = 'Adjusted Rand Index  or  p-value'
 
@@ -121,6 +121,7 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
         # sort importance according to selected measure
         gene_importance = gene_importance.sort_values(by='importance_by_' + measure, ascending=False).reset_index(drop=True)
         X, ST = data.iloc[:, :-1], data.iloc[:, -1]
+
         print("Hierarchical clustering")
         try:
             results = Parallel(n_jobs=n_jobs, verbose=5, max_nbytes=None)(
@@ -138,10 +139,10 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
         analysis_res = reorder_analysis_res(analysis_res)
 
         if find_recommended_thresh:
-            analysis_res = find_threshold(analysis_res, simulated_samples)
+            analysis_res = find_threshold(analysis_res, ST, simulated_samples, n_jobs)
 
         if plot_results:
-            plot_res(analysis_res)
+            plot_res(analysis_res, measure)
 
         return analysis_res
 

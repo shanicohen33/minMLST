@@ -11,8 +11,9 @@ def create_dir_if_not_exists(dir_path):
         os.makedirs(dir_path)
 
 
-def empty_dir_content(dir_path):
+def remove_dir(dir_path):
     for file in os.listdir(dir_path):
         file_path = os.path.join(dir_path, file)
         if os.path.isfile(file_path):
             os.unlink(file_path)
+    os.rmdir(dir_path)
