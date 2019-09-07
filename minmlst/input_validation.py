@@ -103,4 +103,4 @@ def validate_input_gra(data, gene_importance, measure, reduction, percentiles, s
     # n_jobs
     if not np.issubdtype(type(n_jobs), np.integer):
         raise ValueError(f"Error: 'n_jobs' must be of type int, got {type(n_jobs)}")
-    return max(n_jobs, 60)  # limit n_jobs to 60
+    return min(n_jobs, 60)  # limit n_jobs to 60
