@@ -20,10 +20,11 @@ del hard_dependencies, dependency, missing_dependencies
 
 from minmlst.gene_importance import *
 from minmlst.clustering import *
-from minmlst.tests import *
+from minmlst.input_validation import *
 import pandas as pd
 import numpy as np
 import os
+import traceback
 from joblib import Parallel, delayed
 import multiprocessing as mp
 import matplotlib.pyplot as plt
@@ -129,6 +130,7 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
                                                  find_recommended_thresh, simulated_samples) for num_of_genes in lst)
         except Exception as ex:
             print(f"Error - unable to perform parallel computing due to: {ex}")
+            print(traceback.format_exc())
             print(f"Running serial computation instead")
             results = []
             for num_of_genes in lst:

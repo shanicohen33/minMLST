@@ -3,6 +3,7 @@ import numpy as np
 import xgboost as xgb
 import pandas as pd
 import shap
+import traceback
 from collections import OrderedDict
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
@@ -84,16 +85,19 @@ def get_gene_importance(X, y, measures, max_depth, learning_rate, stopping_metho
         )
 
     print(f"Calculating gene importance by:")
-    scores_df = pd.DataFrame()
+    scores_df = pd.DataFrame({'gene': list(X.columns.values)})
     for m in list(OrderedDict.fromkeys(measures)):
         if m == "shap":
-            scores = calc_shap_values(bst=bst, X=X, y=y_enc)
+            try:
+                scores = calc_shap_values(bst=bst, X=X, y=y_enc)
+            except Exception as ex:
+                print(f"Error - unable compute SHAP values due to: {ex}")
+                print(traceback.format_exc())
+                scores = pd.DataFrame()
         else:
             scores = calc_importance(bst=bst, measure=m)
-        if scores_df.empty:
-            scores_df = scores
-        else:
-            scores_df = pd.merge(scores_df, scores, how='outer', on='gene')
+        if not scores.empty:
+            scores_df = pd.merge(scores_df, scores, how='left', on='gene')
     scores_df = scores_df.fillna(0).sort_values(by=scores_df.columns.values[1], ascending=False).reset_index(drop=True)
 
     return scores_df
