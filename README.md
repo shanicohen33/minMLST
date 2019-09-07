@@ -12,7 +12,7 @@ pip install minmlst
 </pre>
 
 ## Examples
-### Quantifying gene importance
+### 1. Quantifying gene importance
 
 TBD
 ```python
@@ -33,24 +33,24 @@ gi_results = gene_importance(data=data, measures=measures)
 gi_results.to_csv(join(path, 'gene_importance_Legionella_pneumophila' + '.csv'), index=False)
 ```
 
-### Gene reduction analysis
+### 2. Gene reduction analysis
 
 TBD
-##### Using default parameters
+#### 2.1 Using default parameters
 ```python
 measure = 'shap'
 gra_gi_results = gene_reduction_analysis(data, gi_results, measure)
 gra_gi_results.to_csv(join(path, f'gra_Legionella_pneumophila_{measure}' + '.csv'), index=False)
 ```
 
-##### Find recommended threshold
+#### 2.2 Find recommended threshold
 ```python
 measure = 'shap'
 gra_gi_results = gene_reduction_analysis(data, gi_results, measure, find_recommended_thresh=True)
 gra_gi_results.to_csv(join(path, f'gra_Legionella_pneumophila_{measure}' + '.csv'), index=False)
 ```
 
-##### ARI simulation study for p.v calculation
+#### 2.3 ARI simulation study for p.v calculation
 ```python
 measure = 'shap'
 gra_gi_results = gene_reduction_analysis(data, gi_results, measure, find_recommended_thresh=True,
