@@ -109,7 +109,6 @@ def find_threshold(results, ST, simulated_samples, n_jobs):
 
 
 def hierarchical_clustering(ST, x, num_of_genes, gene_importance, percentiles, find_thresh, simulated_samples):
-    print(f"num_of_genes: {num_of_genes}")
     res = {'num_of_genes': num_of_genes}
     curr_genes = gene_importance['gene'][0:num_of_genes]
     curr_x = x.loc[:, curr_genes]
