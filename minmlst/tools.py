@@ -94,7 +94,8 @@ def plot_res(analysis_res, measure):
 
 
 def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, percentiles=[0.5, 1],
-                            find_recommended_thresh=False, simulated_samples=0, plot_results=True, n_jobs=mp.cpu_count()):
+                            find_recommended_thresh=False, simulated_samples=0, plot_results=True,
+                            n_jobs=mp.cpu_count()):
     '''
 
     :param data (DataFrame): (n-1) columns of genes, last column (n) must contain the ST (strain type).
@@ -108,7 +109,7 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
     :return:
     '''
     try:
-        validate_input_gra(data, gene_importance, measure, reduction, percentiles, simulated_samples, n_jobs)
+        n_jobs = validate_input_gra(data, gene_importance, measure, reduction, percentiles, simulated_samples, n_jobs)
 
         # remove non-informative genes
         gi = gene_importance[gene_importance['importance_by_' + measure] > 0]

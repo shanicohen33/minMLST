@@ -30,9 +30,7 @@ DISTANCE_METRIC = 'matching'  # 'hamming'
 HC_METHOD = 'complete'
 # 'complete' - Farthest Point Algorithm
 TEMP_FOLDER = join(os.getcwd(), 'mlst_temp')
-# endregion
 
-# region params find recommended threshold
 PERCENTILES_TO_CHECK = np.arange(.5, 20.5, 0.5)
 # endregion
 

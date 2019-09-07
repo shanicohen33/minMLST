@@ -1,6 +1,6 @@
-from setuptools import setup, find_packages
-import codecs
 import re
+import codecs
+from setuptools import setup, find_packages
 from os.path import join, abspath, dirname
 
 
@@ -36,7 +36,4 @@ setup(
         "Operating System :: Microsoft :: Windows",
     ],
 )
-
-
-
 
