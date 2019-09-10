@@ -36,7 +36,7 @@ gi_results.to_csv(join(path, 'gene_importance_Legionella_pneumophila' + '.csv'),
 display(gi_results)
 ```
 <p align="center">
-  <img width="811" src="https://raw.githubusercontent.com/shanicohen33/minMLST/master/docs/artwork/boston_instance.png" />
+  <img width="811" src="https://raw.githubusercontent.com/shanicohen33/minMLST/master/docs/gene_importance_results.png" />
 </p>
 
 ### 2. Gene reduction analysis
