@@ -18,6 +18,7 @@ TBD
 ```python
 import pandas as pd
 from os.path import join, sep
+from IPython.display import display
 from minmlst.tools import gene_importance, gene_reduction_analysis
 
 path = join('C:', sep, 'Users', 'user_name', 'Desktop', 'minMLST_data')
@@ -31,7 +32,12 @@ measures = ['shap', 'total_gain']
 gi_results = gene_importance(data=data, measures=measures)
 # save results to csv
 gi_results.to_csv(join(path, 'gene_importance_Legionella_pneumophila' + '.csv'), index=False)
+# display results
+display(gi_results)
 ```
+<p align="center">
+  <img width="811" src="https://raw.githubusercontent.com/shanicohen33/minMLST/master/docs/artwork/boston_instance.png" />
+</p>
 
 ### 2. Gene reduction analysis
 
