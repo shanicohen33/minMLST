@@ -17,6 +17,7 @@ pip install minmlst
 TBD
 ```python
 import pandas as pd
+import numpy as np
 from os.path import join, sep
 from IPython.display import display
 from minmlst.tools import gene_importance, gene_reduction_analysis

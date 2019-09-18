@@ -9,6 +9,7 @@ import pandas as pd
 import pickle
 from os.path import join
 from minmlst.utils import *
+import matplotlib.pyplot as plt
 
 
 def save_temp_files(percentiles, thresholds, z, num_of_genes):
@@ -34,7 +35,6 @@ def simulation_study_ARI(partition_A, partition_B, ARI_0, num_of_samples):
 
 
 def is_next_better(best_ARI_vec, next_ARI_vec):
-    #todo (Isana)- should we let the user define it?
     minimal_diff = 0
     diff = sum(next_ARI_vec - best_ARI_vec)
     return diff >= minimal_diff
@@ -71,9 +71,9 @@ def parse_ans(ans, perc, simulated_samples):
     return _ans
 
 
-def find_threshold(results, ST, simulated_samples, n_jobs):
-    best_perc = c.PERCENTILES_TO_CHECK[0]
-    next_perc = c.PERCENTILES_TO_CHECK[1]
+def find_threshold(results, ST, percentiles_to_check, simulated_samples, n_jobs):
+    best_perc = percentiles_to_check[0]
+    next_perc = percentiles_to_check[1]
     _best = {"perc": best_perc, "ARI_vec": results[f"ARI_perc_{format(best_perc, '.15g')}"]}
     _next = {"perc": next_perc, "ARI_vec": results[f"ARI_perc_{format(next_perc, '.15g')}"]}
     if simulated_samples > 0:
@@ -81,22 +81,24 @@ def find_threshold(results, ST, simulated_samples, n_jobs):
         _next.update({"pv_vec": results[f"pv_perc_{format(next_perc, '.15g')}"]})
     next_better = is_next_better(_best["ARI_vec"], _next["ARI_vec"])
 
-    potential_perc = list(c.PERCENTILES_TO_CHECK[2:])
-    while next_better and potential_perc:
-        _best = _next
-        next_perc = potential_perc.pop(0)
-        try:
-            ans = Parallel(n_jobs=n_jobs, verbose=5, max_nbytes=None)(
-                delayed(calc_ARI_pv_vec)(num_of_genes, next_perc, ST, simulated_samples) for num_of_genes in results['num_of_genes'])
-        except Exception as ex:
-            print(f"Error - unable to perform parallel computing due to: {ex}")
-            print(f"Running serial computation instead")
-            ans = []
-            for num_of_genes in results['num_of_genes']:
-                a = calc_ARI_pv_vec(num_of_genes, next_perc, ST, simulated_samples)
-                ans = ans + [a]
-        _next = parse_ans(ans, next_perc, simulated_samples)
-        next_better = is_next_better(_best["ARI_vec"], _next["ARI_vec"])
+    if len(percentiles_to_check) > 2:
+        potential_perc = list(percentiles_to_check[2:])
+        while next_better and potential_perc:
+            _best = _next
+            next_perc = potential_perc.pop(0)
+            try:
+                ans = Parallel(n_jobs=n_jobs, verbose=5, max_nbytes=None)(
+                    delayed(calc_ARI_pv_vec)(num_of_genes, next_perc, ST, simulated_samples) for num_of_genes in results['num_of_genes'])
+            except Exception as ex:
+                print(f"Error - unable to perform parallel computing due to: {ex}")
+                print(f"Running serial computation instead")
+                ans = []
+                for num_of_genes in results['num_of_genes']:
+                    a = calc_ARI_pv_vec(num_of_genes, next_perc, ST, simulated_samples)
+                    ans = ans + [a]
+            _next = parse_ans(ans, next_perc, simulated_samples)
+            next_better = is_next_better(_best["ARI_vec"], _next["ARI_vec"])
+
     if next_better:
         _best = _next
 
@@ -108,7 +110,8 @@ def find_threshold(results, ST, simulated_samples, n_jobs):
     return pd.DataFrame(res)
 
 
-def hierarchical_clustering(ST, x, num_of_genes, gene_importance, percentiles, find_thresh, simulated_samples):
+def hierarchical_clustering(ST, x, num_of_genes, gene_importance, percentiles, find_thresh, percentiles_to_check,
+                            simulated_samples):
     res = {'num_of_genes': num_of_genes}
     curr_genes = gene_importance['gene'][0:num_of_genes]
     curr_x = x.loc[:, curr_genes]
@@ -116,7 +119,7 @@ def hierarchical_clustering(ST, x, num_of_genes, gene_importance, percentiles, f
     z = linkage(y=distances, method=c.HC_METHOD)
 
     if find_thresh:
-        percentiles = c.PERCENTILES_TO_CHECK
+        percentiles = percentiles_to_check
         thresholds = np.percentile(a=distances, q=percentiles)
         save_temp_files(percentiles, thresholds, z, num_of_genes)
         # In case 'find_recommended_thresh' = True ---> percentiles 0.5 and 1 are calculated as a baseline
@@ -134,3 +137,28 @@ def reorder_analysis_res(df):
     cols = list(df.columns.values)
     cols.remove('num_of_genes')
     return df[['num_of_genes'] + cols]
+
+
+def plot_res(analysis_res, measure):
+    title = f'Results per number of genes (measure = {measure})'
+    x_label = 'Number of genes'
+    y_label = 'Adjusted Rand Index  or  p-value'
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+    ax.set_title(title)
+    ax.set_ylabel(y_label)
+    ax.set_xlabel(x_label)
+    ax.set_yticks(np.arange(0, 1.2, 0.2))
+    ax.set_ylim((-0.05, 1))
+
+    x_col = 'num_of_genes'
+    y_cols = list(analysis_res.columns.values)
+    y_cols.remove(x_col)
+    for y_col in y_cols:
+        ax.plot(analysis_res[x_col], analysis_res[y_col], label=y_col, marker='o', linestyle='--')
+    ax.legend(frameon=True)
+    plt.show()

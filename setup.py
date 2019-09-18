@@ -22,18 +22,27 @@ setup(
     author="Shani Cohen",
     author_email="shani.cohen.33@gmail.com",
     description="Machine-learning based minimal MLST scheme for bacterial strain typing",
-    long_description=long_description,
+    long_description="minMLST is a machine-learning based methodology for identifying a minimal subset of genes " +
+                     "that preserves high discrimination among bacterial strains. It combines well known" +
+                     "machine-learning algorithms and approaches such as XGBoost, distance-based hierarchical " +
+                     "clustering, and SHAP. minMLST quantifies the importance level of each gene in an MLST " +
+                     "scheme and allows the user to investigate the trade-off between minimizing the number " +
+                     "of genes in the scheme vs preserving a high resolution among different strain types.\n\n " +
+                     "More information in [GitHub](https://github.com/shanicohen33/minMLST).",
     long_description_content_type="text/markdown",
     url="https://github.com/shanicohen33/minMLST",
     packages=find_packages(),
     install_requires=[
         'shap>=0.28.5',
-        'xgboost>=0.82'
+        'xgboost>=0.82',
+        'dill>=0.3.0'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
+        'Programming Language :: Python :: 3.6',
         "License :: OSI Approved :: MIT License",
         "Operating System :: Microsoft :: Windows",
+        "Operating System :: POSIX :: Linux"
     ],
 )
 

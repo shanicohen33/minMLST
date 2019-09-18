@@ -45,20 +45,21 @@ def validate_input_gi(data, measures, max_depth, learning_rate, stopping_method,
         if m not in valid_measures:
             raise ValueError(f"Error: 'measures' contains invalid element {m}. Valid elements are: {valid_measures}.")
     # max_depth
-    if not np.issubdtype(type(max_depth), np.integer):
-        raise ValueError(f"Error: 'max_depth' must be of type int, got {type(max_depth)}")
+    if not np.issubdtype(type(max_depth), np.integer) or max_depth < 0:
+        raise ValueError(f"Error: 'max_depth' must be of type int and greater equal to 0, got {type(max_depth)}")
     # learning_rate
-    if not np.issubdtype(type(learning_rate), np.floating):
-        raise ValueError(f"Error: 'learning_rate' must be of type float, got {type(learning_rate)}")
+    if not np.issubdtype(type(learning_rate), np.number) or learning_rate < 0:
+        raise ValueError(f"Error: 'learning_rate' must be a number greater equal to 0, got {type(learning_rate)}")
     # stopping_method
     if stopping_method not in ['num_boost_round', 'early_stopping_rounds']:
         raise ValueError(f"Error: 'stopping_method' must be 'num_boost_round' or 'early_stopping_rounds' (type str)")
     # stopping_rounds
-    if not np.issubdtype(type(stopping_rounds), np.integer):
-        raise ValueError(f"Error: 'stopping_rounds' must be of type int, got {type(stopping_rounds)}")
+    if not np.issubdtype(type(stopping_rounds), np.integer) or stopping_rounds <= 0:
+        raise ValueError(f"Error: 'stopping_rounds' must be of type int and greater than 0, got {type(stopping_rounds)}")
 
 
-def validate_input_gra(data, gene_importance, measure, reduction, percentiles, simulation_iter, n_jobs):
+def validate_input_gra(data, gene_importance, measure, reduction, percentiles, percentiles_to_check, simulated_samples,
+                       n_jobs):
     print("Input validation")
     # data
     validate_data(data)
@@ -94,13 +95,19 @@ def validate_input_gra(data, gene_importance, measure, reduction, percentiles, s
                          f" percentage of genes to be reduced.")
     # percentiles
     validate_percentiles(percentiles)
-    # simulation_iter
-    if not np.issubdtype(type(simulation_iter), np.integer):
-        raise ValueError(f"Error: 'simulation_iter' must be of type int, got {type(simulation_iter)}")
-    if simulation_iter < 1000:
+    # percentiles_to_check
+    if not isinstance(percentiles_to_check, (collections.Sequence, np.ndarray)) or len(percentiles_to_check) < 2:
+        raise ValueError(f"Error: 'percentiles_to_check' must be an array containing at least 2 numbers (percentiles), got: {percentiles_to_check}")
+    for p in percentiles_to_check:
+        if (not np.issubdtype(type(p), np.number)) or (not (0 < p < 100)):
+            raise ValueError(f"Error: each element in 'percentiles_to_check' must be a number in the range of (0, 100), got: {p}")
+    # simulated_samples
+    if not np.issubdtype(type(simulated_samples), np.integer):
+        raise ValueError(f"Error: 'simulation_iter' must be of type int, got {type(simulated_samples)}")
+    if 0 < simulated_samples < 1000:
         print("Warning: for the significance of the p.v results, a larger number of simulated samples (1000, say) is "
               "required. \nSee- https://www.sciencedirect.com/science/article/pii/S0950329313000852\n")
     # n_jobs
     if not np.issubdtype(type(n_jobs), np.integer):
         raise ValueError(f"Error: 'n_jobs' must be of type int, got {type(n_jobs)}")
-    return min(n_jobs, 60)  # limit n_jobs to 60
+    return min(n_jobs, 60), sorted(percentiles_to_check)  # limit n_jobs to 60, sort 'percentiles_to_check'
