@@ -1,3 +1,8 @@
+<a href="https://pypi.org/project/minmlst"><img src="https://img.shields.io/pypi/v/minmlst"></a>
+<a href="https://pypi.org/project/minmlst"><img src="https://img.shields.io/pypi/pyversions/minmlst"></a>
+<a href="https://pypi.org/project/minmlst"><img src="https://img.shields.io/badge/platform-windows%20%7C%20linux-lightgrey"></a>
+<a href="https://pypi.org/project/minmlst"><img src="https://img.shields.io/pypi/l/minmlst"></a>
+
 # minMLST
 
 minMLST is a machine-learning based methodology for identifying a minimal subset of genes
