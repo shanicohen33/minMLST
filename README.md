@@ -116,7 +116,7 @@ the proportion of those genes between the two allelic profiles which disagree.
 To obtain a clustering structure (i.e. STs), we apply a threshold (or maximal distance between isolates of the same ST)
 that equals to a certain percentile of distances distribution; This percentile (or percentiles) can be defined by
 the user in the `percentiles` input parameter, or alternatively being selected by the **<em>find recommended threshold</em>** procedure
-that searches in the search space of `percentiles_to_check` input parameter (see [2.3](#2.3-find-recommended-threshold)).
+that searches in the search space of `percentiles_to_check` input parameter (see 2.3).
 
 Typing performance is measure by the Adjusted Rand Index (ARI), which quantifies similarity between the induced
 clustering structure (that is based on a subset of genes) and the original clustering structure (that is based on
@@ -177,18 +177,18 @@ display(analysis_results)
 * `find_recommended_thresh` (boolean, optional, default = False): 
 
     if True, ignore parameter `percentiles` and run the **<em>find recommended threshold</em>** procedure 
-    (see [2.3](#-2.3-find-recommended-threshold)).
+    (see 2.3).
     
 * `percentiles_to_check` (1-D array-like of floats, optional, default = numpy.arange(.5, 20.5, 0.5)): 
 
     The percentiles of distances distribution to be evaluated by the **<em>find recommended threshold</em>** procedure 
-    (see [2.3](#2.3-find-recommended-threshold)). The array must contain at least 2 percentiles; each percentile 
+    (see 2.3). The array must contain at least 2 percentiles; each percentile 
     must be greater than 0 and smaller than 100.
 
 * `simulated_samples` (int, optional, default = 0): 
 
     The number of samples (clustering structures) to simulate for the computation of the p-value of the observed ARI
-    (see [2.2](#2.2-ari-simulation-study-for p.v-calculation)).
+    (see 2.2).
     For the significance of the p-values results, it's recommended to use ~1000 samples or more (see 
     [Qannari et al., 2014](https://www.sciencedirect.com/science/article/abs/pii/S0950329313000852)).
     In case `simulated_samples`=0, simulation won't run and p-values won't be calculated.
