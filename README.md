@@ -234,7 +234,7 @@ display(analysis_results)
 <p align="center">
   <img width="811" src="/docs/analysis_results_pv.png" />
 </p>
-             
+      
 <br>
 
 #### 2.3 Find recommended threshold
