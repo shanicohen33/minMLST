@@ -139,7 +139,7 @@ display(analysis_results)
 ```
 
 <p align="center">
-  <img width="811" src="/docs/analysis_results_default.png" />
+  <img width="811" src="/docs/analysis_results.png" />
 </p>
 
 <br>
@@ -179,7 +179,7 @@ display(analysis_results)
 * `find_recommended_thresh` (boolean, optional, default = False): 
 
     if True, ignore parameter `percentiles` and run the **<em>find recommended threshold</em>** procedure 
-    (see [2.3](#2.3-find-recommended-threshold)).
+    (see [2.3](#-2.3-find-recommended-threshold)).
     
 * `percentiles_to_check` (1-D array-like of floats, optional, default = numpy.arange(.5, 20.5, 0.5)): 
 
@@ -190,7 +190,7 @@ display(analysis_results)
 * `simulated_samples` (int, optional, default = 0): 
 
     The number of samples (clustering structures) to simulate for the computation of the p-value of the observed ARI
-    (see [2.2](#2.2-ari-simulation-study-for p.v-calculation)).
+    (see [2.2](####2.2-ari-simulation-study-for p.v-calculation)).
     For the significance of the p-values results, it's recommended to use ~1000 samples or more (see 
     [Qannari et al., 2014](https://www.sciencedirect.com/science/article/abs/pii/S0950329313000852)).
     In case `simulated_samples`=0, simulation won't run and p-values won't be calculated.
