@@ -144,7 +144,7 @@ def plot_res(analysis_res, measure):
     x_label = 'Number of genes'
     y_label = 'Adjusted Rand Index  or  p-value'
 
-    fig, ax = plt.subplots(nrows=1, ncols=1)
+    fig, ax = plt.subplots(nrows=1, ncols=1, dpi=150)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.get_xaxis().tick_bottom()
@@ -160,5 +160,5 @@ def plot_res(analysis_res, measure):
     y_cols.remove(x_col)
     for y_col in y_cols:
         ax.plot(analysis_res[x_col], analysis_res[y_col], label=y_col, marker='o', linestyle='--')
-    ax.legend(frameon=True)
+    ax.legend(frameon=True, bbox_to_anchor=(1, 0.5), loc="center left")
     plt.show()

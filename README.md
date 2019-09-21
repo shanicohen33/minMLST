@@ -37,6 +37,10 @@ Next, an XGBoost model is trained with parameters `max_depth`, `learning_rate`, 
 model's performance is evaluated by Multi-class log loss over a test set.
 Finally, gene importance scores are measured for the trained model and provided as a DataFrame output.
 
+A data sample of Legionella pneumophila cgMLST scheme can be downloaded from 
+[here](https://github.com/shanicohen33/minMLST/blob/master/data/Legionella_pneumophila_cgMLST_sample.csv). 
+
+
 ```python
 import pandas as pd
 from os.path import join, sep
@@ -62,7 +66,7 @@ display(gi_results)
   <img width="811" src="/docs/gene_importance_results.png" />
 </p>
 
-#### minmlst.tools.gene_importance
+### minmlst.tools.gene_importance
 ##### Parameters:
 * `data` (DataFrame): 
     
@@ -112,12 +116,12 @@ the proportion of those genes between the two allelic profiles which disagree.
 To obtain a clustering structure (i.e. STs), we apply a threshold (or maximal distance between isolates of the same ST)
 that equals to a certain percentile of distances distribution; This percentile (or percentiles) can be defined by
 the user in the `percentiles` input parameter, or alternatively being selected by the **<em>find recommended threshold</em>** procedure
-that searches in the search space of `percentiles_to_check` input parameter (see 2.2).
+that searches in the search space of `percentiles_to_check` input parameter (see [2.3](#2.3-find-recommended-threshold)).
 
 Typing performance is measure by the Adjusted Rand Index (ARI), which quantifies similarity between the induced
 clustering structure (that is based on a subset of genes) and the original clustering structure (that is based on
 all genes, and was given as an input) ([Hubert and Arabie, 1985](https://link.springer.com/article/10.1007/BF01908075)).
-p-value for the ARI is calculated using a Monte Carlo simulation study ([Qannari et al., 2014](https://www.sciencedirect.com/science/article/abs/pii/S0950329313000852)).
+p-value for the ARI is calculated using a permutation test based on Monte Carlo simulation study ([Qannari et al., 2014](https://www.sciencedirect.com/science/article/abs/pii/S0950329313000852)).
 The analysis results are provided as a DataFrame output and are also plotted by default.
 
 
@@ -138,12 +142,9 @@ display(analysis_results)
   <img width="811" src="/docs/analysis_results_default.png" />
 </p>
 
-<p align="center">
-  <img width="811" src="/docs/analysis_plot_default.png" />
-</p>
+<br>
 
-
-#### minmlst.tools.gene_reduction_analysis
+### minmlst.tools.gene_reduction_analysis
 ##### Parameters:
 * `data` (DataFrame): 
     
@@ -177,17 +178,19 @@ display(analysis_results)
     
 * `find_recommended_thresh` (boolean, optional, default = False): 
 
-    if True, ignore parameter `percentiles` and run the **<em>find recommended threshold</em>** procedure (see 2.2).
+    if True, ignore parameter `percentiles` and run the **<em>find recommended threshold</em>** procedure 
+    (see [2.3](#2.3-find-recommended-threshold)).
     
 * `percentiles_to_check` (1-D array-like of floats, optional, default = numpy.arange(.5, 20.5, 0.5)): 
 
     The percentiles of distances distribution to be evaluated by the **<em>find recommended threshold</em>** procedure 
-    (see 2.2). The array must contain at least 2 percentiles; each percentile must be greater than 0 and smaller 
-    than 100.
+    (see [2.3](#2.3-find-recommended-threshold)). The array must contain at least 2 percentiles; each percentile 
+    must be greater than 0 and smaller than 100.
 
 * `simulated_samples` (int, optional, default = 0): 
 
-    The number of samples (clustering structures) to simulate for the computation of the p-value of the observed ARI.
+    The number of samples (clustering structures) to simulate for the computation of the p-value of the observed ARI
+    (see [2.2](#2.2-ari-simulation-study-for p.v-calculation)).
     For the significance of the p-values results, it's recommended to use ~1000 samples or more (see 
     [Qannari et al., 2014](https://www.sciencedirect.com/science/article/abs/pii/S0950329313000852)).
     In case `simulated_samples`=0, simulation won't run and p-values won't be calculated.
@@ -208,11 +211,36 @@ threshold.
                  
 <br>
 
+#### 2.2 ARI simulation study for p.v calculation
 
-#### 2.2 Find recommended threshold
+P-value is calculated using a significance test of the Adjusted Rand Index (ARI), suggested by 
+[Qannari et al., 2014](https://www.sciencedirect.com/science/article/abs/pii/S0950329313000852).
+The suggested permutation test involves a simulation of a large number (~1000) of partitions (i.e. clustering 
+structures) with several constrains. The number of simulated partitions is set by the input parameter 
+`simulated_samples`.
+
+```python
+measure = 'shap'
+# define the percentiles of distances distribution to be used as thresholds (optional)
+percentiles = [0.1, 0.5, 1, 1.5]
+# define the number of simulated samples
+simulated_samples = 1000
+analysis_results = gene_reduction_analysis(data, gi_results, measure, percentiles=percentiles, 
+                                           simulated_samples=simulated_samples)
+analysis_results.to_csv(join(path, f'analysis_Legionella_pneumophila_{measure}' + '.csv'), index=False)
+display(analysis_results)
+```
+
+<p align="center">
+  <img width="811" src="/docs/analysis_results_pv.png" />
+</p>
+             
+<br>
+
+#### 2.3 Find recommended threshold
 
 This procedure uses an heuristic to find a suitable threshold for generating an induced clustering structure (i.e. STs).
-Its search space is the list of percentiles (`percentiles_to_check`) provided as an input parameter.
+Its search space is the list of percentiles provided as an input parameter `percentiles_to_check`.
 
 To represent the typing performance achieved by a particular threshold, we compute the ARI it results for each
 subset of selected genes and construct a vector composed of these ARI elements.
@@ -230,14 +258,17 @@ In case `find_recommended_thresh` is True, the analysis results are provided for
 
 ```python
 measure = 'shap'
-analysis_results = gene_reduction_analysis(data, gi_results, measure, find_recommended_thresh=True)
+# define the percentiles of distances distribution to be evaluated as thresholds (optional)
+search_space = [0.1, 0.3, 0.5, 1, 1.5, 2, 2.5, 3]
+# set find_recommended_thresh to True
+analysis_results = gene_reduction_analysis(data, gi_results, measure, find_recommended_thresh=True, 
+                                           percentiles_to_check=search_space, simulated_samples=1000)
 analysis_results.to_csv(join(path, f'analysis_Legionella_pneumophila_{measure}' + '.csv'), index=False)
+display(analysis_results)
 ```
 
-#### 2.3 ARI simulation study for p.v calculation
-```python
-measure = 'shap'
-analysis_results = gene_reduction_analysis(data, gi_results, measure, find_recommended_thresh=True,
-                                           simulated_samples=1000)
-analysis_results.to_csv(join(path, f'analysis_Legionella_pneumophila_{measure}' + '.csv'), index=False)
-```
+<p align="center">
+  <img width="811" src="/docs/analysis_results_find_thresh.png" />
+</p>
+
+

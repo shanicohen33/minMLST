@@ -193,10 +193,10 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
                 results = results + [r]
 
         analysis_res = pd.DataFrame(results)
-        analysis_res = reorder_analysis_res(analysis_res)
 
         if find_recommended_thresh:
             analysis_res = find_threshold(analysis_res, ST, percentiles_to_check, simulated_samples, n_jobs)
+        analysis_res = reorder_analysis_res(analysis_res)
 
         if plot_results:
             plot_res(analysis_res, measure)
