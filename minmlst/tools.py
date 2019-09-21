@@ -6,7 +6,7 @@ minMLST is a machine-learning based methodology for identifying a minimal subset
 discrimination among bacterial strains. It combines well known machine-learning algorithms and approaches such as
 XGBoost, distance-based hierarchical clustering, and SHAP.
 minMLST quantifies the importance level of each gene in an MLST scheme and allows the user to investigate the trade-off
-between minimizing the number of genes in the scheme vs preserving a high resolution among different strain types.
+between minimizing the number of genes in the scheme vs preserving a high resolution among strain types.
 
 """
 # Let users know if they're missing any of the hard dependencies
@@ -38,8 +38,8 @@ np.random.seed(c.SEED)
 # endregion set random seeds
 
 
-def gene_importance(data, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARNING_RATE,
-                    stopping_method=c.STOPPING_METHOD, stopping_rounds = c.NUM_BOOST_ROUND):
+def gene_importance(data, measures, max_depth=6, learning_rate=0.3, stopping_method='num_boost_round',
+                    stopping_rounds = 100):
     """
     This function provides a ranking of gene importance according to selected measures: 'shap', 'weight', 'gain',
     'cover', 'total_gain' or 'total_cover'.
@@ -53,7 +53,7 @@ def gene_importance(data, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARN
     Next, an XGBoost model is trained with parameters 'max_depth', 'learning_rate', 'stopping_method' and 'stopping_rounds' -
     more information about XGBoost parameters can be found here: https://xgboost.readthedocs.io/en/latest/python/python_api.html.
     Model's performance is evaluated by Multi-class log loss over a test set.
-    Gene importance scores are measured over the trained model and provided as a DataFrame output.
+    Finally, gene importance scores are measured over the trained model and provided as a DataFrame output.
 
     :param data (DataFrame): DataFrame in the shape of (m,n).
                              (n-1) columns of genes, last column (n) must contain the ST (strain type).
@@ -90,7 +90,7 @@ def gene_importance(data, measures, max_depth=c.MAX_DEPTH, learning_rate=c.LEARN
 
 
 def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, percentiles=[0.5, 1],
-                            find_recommended_thresh=False, percentiles_to_check = c.PERCENTILES_TO_CHECK,
+                            find_recommended_thresh=False, percentiles_to_check = np.arange(.5, 20.5, 0.5),
                             simulated_samples=0, plot_results=True, n_jobs=mp.cpu_count()):
     """
     This function analyzes how minimizing the number of genes in the MLST scheme impacts strain typing performance.
@@ -102,7 +102,7 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
     that equals to a certain percentile of distances distribution; This percentile (or percentiles) can be defined by
     the user in the 'percentiles' input parameter, or alternatively being selected by the 'find threshold' procedure
     that searches in the search space of 'percentiles_to_check' input parameter (see below).
-    Typing performance is measure by the Adjusted Rand index (ARI), which quantifies similarity between the induced
+    Typing performance is measure by the Adjusted Rand Index (ARI), which quantifies similarity between the induced
     clustering structure (that is based on a subset of genes) and the original clustering structure (that is based on
     all genes, and was given as an input)(see: https://link.springer.com/article/10.1007/BF01908075).
     p-value for the ARI is calculated using a Monte Carlo simulation study (see: https://www.sciencedirect.com/science/article/abs/pii/S0950329313000852)
@@ -110,7 +110,7 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
 
     'find threshold' procedure:
     This procedure uses an heuristic to find a suitable threshold for generating an induced clustering structure (i.e. STs).
-    The search space is the list of percentiles ('percentiles_to_check') provided as an input parameter.
+    Its search space is the list of percentiles ('percentiles_to_check') provided as an input parameter.
     To represent the typing performance achieved by a particular threshold, we compute the ARI it results for each
     subset of selected genes and construct a vector composed of these ARI elements.
     To find a potentially more precise threshold, we runs a serial evaluation process starting from the minimal
@@ -119,8 +119,8 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
     (second minimal) threshold using a distance function; this function is a "non-absolute" L1 distance, i.e. it equals
     to the sum of the differences of two vectors' coordinates, when subtracting the 'baseline' from the 'next'.
     In case the distance is positive (i.e. 'next' performs better) the 'next' threshold will be defined as the new
-    'baseline' and will be compared with the next potential threshold. otherwise, the search is done and the 'baseline'
-    is selected as the recommended threshold.
+    'baseline' and will be compared with the subsequent  potential threshold. otherwise, the search is done and the
+    'baseline' is selected as the recommended threshold.
 
 
     :param data (DataFrame): DataFrame in the shape of (m,n).
@@ -129,37 +129,37 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
                          Data types should be integers only.
                          Missing values should be represented as 0, no missing values are allowed for the ST (last
                          column).
-    :param gene_importance (DataFrame): Gene importance results in the format returned by 'gene_importance' function.
-    :param measure (str): The measure according to which gene importance will be defined. measure must be included in
-                      the 'gene_importance' results.
-                      measure must be either 'shap', 'weight', 'gain', 'cover', 'total_gain' or 'total_cover'.
+    :param gene_importance (DataFrame): Importance scores in the format returned by 'gene_importance' function.
+    :param measure (str): A single measure according to which gene importance will be defined.
+                          It can be either 'shap', 'weight', 'gain', 'cover', 'total_gain' or 'total_cover'.
+                          Note that the selected measure must be included in the `gene_importance` input
     :param reduction (numeric): The number (int) or percentage (0<float<1) of least important genes to be removed at
-                                each iteration (default = 0.2). Importance is determined by parameter 'measure'.
-                                First iteration includes all genes, second iteration includes all informative genes
-                                (genes with importance score > 0), and the subset of genes in the subsequent iterations
-                                is calculated according to the 'reduction' parameter.
+                                each iteration (default = 0.2).
+                                The first iteration includes all genes, the second iteration includes all informative
+                                genes (importance score > 0), and the subsequent iterations include a reduced
+                                subset of genes according to the `reduction` parameter
     :param percentiles (float or array of floats): The percentile (or percentiles) of distances distribution to be used
                                                    as a threshold (or thresholds) -> (default = [0.5, 1]).
                                                    Each percentile must be greater than 0 and smaller than 100.
-                                                   The threshold defines the maximal distance (or dissimilarity) between
-                                                   isolates of the same ST (cluster).
+                                                   The threshold defines the maximal distance (i.e. maximal
+                                                   dissimilarity) between isolates of the same ST (cluster).
     :param find_recommended_thresh (boolean): if True, ignore parameter 'percentiles' and run a procedure to find a
                                               recommended threshold out of 'percentiles_to_check' (default = False).
-    :param percentiles_to_check (array of floats): The percentiles of distances distribution to be evaluated and compared,
-                                                   in case parameter 'find_recommended_thresh' is True (default = [0.5, 1, ... ,20]).
-                                                   Array must contain at least 2 percentiles, each percentile must be
-                                                   greater than 0 and smaller than 100.
-    :param simulated_samples (int): The number of samples (clustering structures) to simulate for computing the p-value
-                                    of the observed ARI (default = 0).
+    :param percentiles_to_check (array of floats): The percentiles of distances distribution to be evaluated by the
+                                                   'find recommended threshold' procedure (default = numpy.arange(.5, 20.5, 0.5)).
+                                                   The array must contain at least 2 percentiles; each percentile must
+                                                   be greater than 0 and smaller than 100.
+    :param simulated_samples (int): The number of samples (clustering structures) to simulate the computation of the
+                                    p-value of the observed ARI (default = 0).
+                                    For the significance of the p-value results, it's recommended to use ~1000 samples
+                                    or more (see- https://www.sciencedirect.com/science/article/pii/S0950329313000852).
                                     In case 'simulated_samples'=0, simulation won't run and p-value won't be calculated.
-                                    For the significance of the results, it's recommended to use at least ~1000 samples
-                                    (see- https://www.sciencedirect.com/science/article/pii/S0950329313000852).
-    :param plot_results (boolean): if True, plot the ARI and p-value results for each selected threshold (parameter 'percentiles')
+    :param plot_results (boolean): if True, plot the ARI and p-value results for each selected threshold
                                    as a function of the number of genes (default = True).
     :param n_jobs (int): The maximum number of concurrently running jobs.
                          (default = min(60, number of CPUs in the system)).
     :return: DataFrame. ARI and p-value (if 'simulated_samples' > 0) computed for each subset of most important genes,
-                        by using a selected threshold (parameter 'percentiles').
+                        and for each selected threshold.
     """
     try:
         n_jobs, percentiles_to_check = validate_input_gra(data, gene_importance, measure, reduction, percentiles,
