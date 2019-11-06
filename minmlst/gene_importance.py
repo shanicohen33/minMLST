@@ -13,7 +13,9 @@ def calc_shap_values(bst, X, y):
     print("  mean_shap_values")
     explainer = shap.TreeExplainer(bst)
     shap_values = explainer.shap_values(X=X, y=y)
+    del explainer
     mean_shap_values = np.sum(np.mean(np.abs(shap_values), axis=0), axis=0)
+    del shap_values
     gene_importance = pd.DataFrame({'gene': list(X.columns.values),
                                     'importance_by_shap': list(mean_shap_values)})
     return gene_importance

@@ -18,8 +18,6 @@ EVAL_METRIC = ['merror', 'mlogloss']
 DISTANCE_METRIC = 'matching'  # 'hamming'
 # Distance is normalized so it ranges between [0, 1]
 # (proportion of those vector elements between two n-vectors u and v which disagree.)
-HC_METHOD = 'complete'
-# 'complete' - Farthest Point Algorithm
 TEMP_FOLDER = join(os.getcwd(), 'mlst_temp')
 
 # endregion

@@ -27,6 +27,8 @@ def simulation_study_ARI(partition_A, partition_B, ARI_0, num_of_samples):
         ARI_dist[i] = adjusted_rand_score(permutation(partition_A), permutation(partition_B))
     m = np.average(ARI_dist)
     std = np.std(ARI_dist)
+    if std == 0:
+        std = np.finfo(np.float32).eps
     NARI_0 = (ARI_0 - m) / std
     NARI_dist = (ARI_dist - m) / std
     p_value = len(NARI_dist[NARI_dist > NARI_0]) / len(NARI_dist)
@@ -110,13 +112,13 @@ def find_threshold(results, ST, percentiles_to_check, simulated_samples, n_jobs)
     return pd.DataFrame(res)
 
 
-def hierarchical_clustering(ST, x, num_of_genes, gene_importance, percentiles, find_thresh, percentiles_to_check,
-                            simulated_samples):
+def hierarchical_clustering(ST, x, num_of_genes, gene_importance, linkage_method, percentiles, find_thresh,
+                            percentiles_to_check, simulated_samples):
     res = {'num_of_genes': num_of_genes}
     curr_genes = gene_importance['gene'][0:num_of_genes]
     curr_x = x.loc[:, curr_genes]
     distances = pdist(X=curr_x, metric=c.DISTANCE_METRIC)
-    z = linkage(y=distances, method=c.HC_METHOD)
+    z = linkage(y=distances, method=linkage_method)
 
     if find_thresh:
         percentiles = percentiles_to_check

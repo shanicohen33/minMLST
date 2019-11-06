@@ -75,11 +75,12 @@ def gene_importance(data, measures, max_depth=6, learning_rate=0.3, stopping_met
     try:
         validate_input_gi(data, measures, max_depth, learning_rate, stopping_method, stopping_rounds)
 
-        print(f"Fliter singletones (strain-types with a single isolate only)")
+        # Filter singletons (strain types with a single related isolate)
         st_lst = data.iloc[:, -1]
         st, counts = np.unique(st_lst, return_counts=True)
         data = data[[x in st[counts > 1] for x in st_lst]].reset_index(drop=True)
-        print(f"   {len(data)} isolates remained out of {len(st_lst)}")
+        if data.empty:
+            raise ValueError(f"Error: 'data' contains only singletons (strain types with a single related isolate).")
 
         X, y = data.iloc[:, :-1], data.iloc[:, -1]
         results = get_gene_importance(X, y, measures, max_depth, learning_rate, stopping_method, stopping_rounds)
@@ -89,9 +90,10 @@ def gene_importance(data, measures, max_depth=6, learning_rate=0.3, stopping_met
         print(ve)
 
 
-def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, percentiles=[0.5, 1],
-                            find_recommended_thresh=False, percentiles_to_check = np.arange(.5, 20.5, 0.5),
-                            simulated_samples=0, plot_results=True, n_jobs=mp.cpu_count()):
+def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, linkage_method='complete',
+                            percentiles=[0.5, 1], find_recommended_thresh=False,
+                            percentiles_to_check = np.arange(.5, 20.5, 0.5), simulated_samples=0, plot_results=True,
+                            n_jobs=mp.cpu_count()):
     """
     This function analyzes how minimizing the number of genes in the MLST scheme impacts strain typing performance.
     At each iteration, a subset of X most important genes is selected; and based on the allelic profile composed of these genes,
@@ -131,13 +133,17 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
                          column).
     :param gene_importance (DataFrame): Importance scores in the format returned by 'gene_importance' function.
     :param measure (str): A single measure according to which gene importance will be defined.
-                          It can be either 'shap', 'weight', 'gain', 'cover', 'total_gain' or 'total_cover'.
+                          Can be either 'shap', 'weight', 'gain', 'cover', 'total_gain' or 'total_cover'.
                           Note that the selected measure must be included in the `gene_importance` input
     :param reduction (numeric): The number (int) or percentage (0<float<1) of least important genes to be removed at
                                 each iteration (default = 0.2).
                                 The first iteration includes all genes, the second iteration includes all informative
                                 genes (importance score > 0), and the subsequent iterations include a reduced
                                 subset of genes according to the `reduction` parameter
+    :param linkage_method (str): The linkage method to compute the distance between clusters in the hierarchical
+                                 clustering algorithm (default = 'complete').
+                                 Can be either 'single', 'complete', 'average', 'weighted', 'centroid', 'median' or
+                                 'ward'.
     :param percentiles (float or array of floats): The percentile (or percentiles) of distances distribution to be used
                                                    as a threshold (or thresholds) -> (default = [0.5, 1]).
                                                    Each percentile must be greater than 0 and smaller than 100.
@@ -162,8 +168,8 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
                         and for each selected threshold.
     """
     try:
-        n_jobs, percentiles_to_check = validate_input_gra(data, gene_importance, measure, reduction, percentiles,
-                                                          percentiles_to_check, simulated_samples, n_jobs)
+        n_jobs, percentiles_to_check = validate_input_gra(data, gene_importance, measure, reduction, linkage_method,
+                                                          percentiles, percentiles_to_check, simulated_samples, n_jobs)
         # remove non-informative genes
         gi = gene_importance[gene_importance['importance_by_' + measure] > 0]
         num_informative = len(gi)
@@ -179,7 +185,7 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
         print("Hierarchical clustering")
         try:
             results = Parallel(n_jobs=n_jobs, verbose=5, max_nbytes=None)(
-                delayed(hierarchical_clustering)(ST, X, num_of_genes, gene_importance, percentiles,
+                delayed(hierarchical_clustering)(ST, X, num_of_genes, gene_importance, linkage_method, percentiles,
                                                  find_recommended_thresh, percentiles_to_check, simulated_samples)
                 for num_of_genes in lst)
         except Exception as ex:
@@ -188,8 +194,8 @@ def gene_reduction_analysis(data, gene_importance, measure, reduction=0.2, perce
             print(f"Running serial computation instead")
             results = []
             for num_of_genes in lst:
-                r = hierarchical_clustering(ST, X, num_of_genes, gene_importance, percentiles, find_recommended_thresh,
-                                            percentiles_to_check, simulated_samples)
+                r = hierarchical_clustering(ST, X, num_of_genes, gene_importance, linkage_method, percentiles,
+                                            find_recommended_thresh, percentiles_to_check, simulated_samples)
                 results = results + [r]
 
         analysis_res = pd.DataFrame(results)

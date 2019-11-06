@@ -58,8 +58,8 @@ def validate_input_gi(data, measures, max_depth, learning_rate, stopping_method,
         raise ValueError(f"Error: 'stopping_rounds' must be of type int and greater than 0, got {type(stopping_rounds)}")
 
 
-def validate_input_gra(data, gene_importance, measure, reduction, percentiles, percentiles_to_check, simulated_samples,
-                       n_jobs):
+def validate_input_gra(data, gene_importance, measure, reduction, linkage_method, percentiles, percentiles_to_check,
+                       simulated_samples, n_jobs):
     print("Input validation")
     # data
     validate_data(data)
@@ -93,6 +93,11 @@ def validate_input_gra(data, gene_importance, measure, reduction, percentiles, p
     if (not np.issubdtype(type(reduction), np.number)) or (reduction <= 0):
         raise ValueError(f"Error: 'reduction' must be a positive number. Use int for number of genes, or float for"
                          f" percentage of genes to be reduced.")
+    # linkage_method
+    valid_methods = ['single', 'complete', 'average', 'weighted', 'centroid', 'median', 'ward']
+    if linkage_method not in valid_methods:
+        raise ValueError(f"Error: linkage_method must be either 'single', 'complete', 'average', 'weighted', "
+                         f"'centroid', 'median' or 'ward'.")
     # percentiles
     validate_percentiles(percentiles)
     # percentiles_to_check

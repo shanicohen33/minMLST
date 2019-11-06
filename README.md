@@ -114,9 +114,10 @@ Importance score per gene according to each of the input measures.
 
 This function analyzes how minimizing the number of genes in the MLST scheme impacts strain typing performance.
 At each iteration, a reduced subset of most important genes is selected; and based on the allelic profile composed of these genes,
-isolates are clustered into strain types (ST) using a distance-based hierarchical clustering (complete linkage).
+isolates are clustered into strain types (ST) using a distance-based hierarchical clustering.
 The distance between every pair of isolates is measured by a normalized Hamming distance, which stands for
-the proportion of those genes between the two allelic profiles which disagree.
+the proportion of those genes between the two allelic profiles which disagree. The distance between any two clusters 
+is determined according to a selected linkage method ([more information about the linkage methods supported by this tool](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html)).
 
 To obtain a clustering structure (i.e. STs), we apply a threshold (or maximal distance between isolates of the same ST)
 that equals to a certain percentile of distances distribution; This percentile (or percentiles) can be defined by
@@ -172,7 +173,12 @@ display(analysis_results)
     The number (int) or percentage (0<float<1) of least important genes to be removed at each iteration.
     The first iteration includes all genes, the second iteration includes all informative genes (importance score > 0), 
     and the subsequent iterations include a reduced subset of genes according to the `reduction` parameter.
-    
+
+* `linkage_method` (str, default = 'complete'): 
+ 
+    The the linkage method to compute the distance between clusters in the hierarchical clustering. 
+    It can be either 'single', 'complete', 'average', 'weighted', 'centroid', 'median' or 'ward'.
+
 * `percentiles` (float or 1-D array-like of floats, optional, default = [0.5, 1]):
 
     The percentile (or percentiles) of distances distribution to be used as a threshold (or thresholds).
