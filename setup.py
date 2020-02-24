@@ -36,7 +36,8 @@ setup(
     install_requires=[
         'shap>=0.28.5',
         'xgboost>=0.82',
-        'dill>=0.3.0'
+        'dill>=0.3.0',
+        'sklearn==0.20.1'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

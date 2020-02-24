@@ -37,7 +37,7 @@ def get_gene_importance(X, y, measures, max_depth, learning_rate, stopping_metho
     n_classes = len(np.unique(y_enc))
 
     # split into train and test (stratified)
-    skf = StratifiedKFold(n_splits=2, random_state=c.SEED, shuffle=False)
+    skf = StratifiedKFold(n_splits=2, shuffle=False)
     for train_index, test_index in skf.split(X=X, y=y_enc):
         if len(train_index) < len(test_index):
             tmp = train_index
