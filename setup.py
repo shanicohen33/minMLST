@@ -37,7 +37,10 @@ setup(
         'shap>=0.28.5',
         'xgboost>=0.82',
         'dill>=0.3.0',
-        'sklearn==0.20.1'
+        'matplotlib>=3.0.3',
+        'IPython>=6.1.0',
+        'joblib>=0.13.2',
+        'scikit-learn==0.20.1'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
