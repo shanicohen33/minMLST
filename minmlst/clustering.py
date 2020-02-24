@@ -42,25 +42,25 @@ def is_next_better(best_ARI_vec, next_ARI_vec):
     return diff >= minimal_diff
 
 
-def calc_ARI_pv(res, ST, predicted_ST_lst, percentiles, simulated_samples):
-    for idx, predicted_ST in enumerate(predicted_ST_lst):
-        ARI = adjusted_rand_score(ST, predicted_ST)
+def calc_ARI_pv(res, CT, predicted_CT_lst, percentiles, thresholds, simulated_samples):
+    for idx, predicted_CT in enumerate(predicted_CT_lst):
+        ARI = adjusted_rand_score(CT, predicted_CT)
         res.update({f"ARI_perc_{format(percentiles[idx], '.15g')}": ARI})
+        res.update({f"threshold_value_perc_{format(percentiles[idx], '.15g')}": thresholds[idx]})
         if simulated_samples > 0:
-            p_value = simulation_study_ARI(ST, predicted_ST, ARI, simulated_samples)
+            p_value = simulation_study_ARI(CT, predicted_CT, ARI, simulated_samples)
             res.update({f"pv_perc_{format(percentiles[idx], '.15g')}": p_value})
 
 
-def calc_ARI_pv_vec(num_of_genes, perc, ST, simulated_samples):
+def calc_ARI_pv_vec(num_of_genes, perc, CT, simulated_samples):
     res = {'num_of_genes': num_of_genes}
     with open(join(c.TEMP_FOLDER, f"thresholds_{num_of_genes}" + '.pickle'), 'rb') as handle:
         thres_per_perc = pickle.load(handle)
     with open(join(c.TEMP_FOLDER, f"z_{num_of_genes}" + '.pickle'), 'rb') as handle:
         z = pickle.load(handle)
     curr_thres = thres_per_perc[perc]
-    predicted_ST_lst = [fcluster(Z=z, t=curr_thres, criterion='distance')]
-
-    calc_ARI_pv(res, ST, predicted_ST_lst, [perc], simulated_samples)
+    predicted_CT_lst = [fcluster(Z=z, t=curr_thres, criterion='distance')]
+    calc_ARI_pv(res, CT, predicted_CT_lst, [perc], [curr_thres], simulated_samples)
 
     return res
 
@@ -73,7 +73,7 @@ def parse_ans(ans, perc, simulated_samples):
     return _ans
 
 
-def find_threshold(results, ST, percentiles_to_check, simulated_samples, n_jobs):
+def find_percentile(results, CT, percentiles_to_check, simulated_samples, n_jobs):
     best_perc = percentiles_to_check[0]
     next_perc = percentiles_to_check[1]
     _best = {"perc": best_perc, "ARI_vec": results[f"ARI_perc_{format(best_perc, '.15g')}"]}
@@ -90,13 +90,13 @@ def find_threshold(results, ST, percentiles_to_check, simulated_samples, n_jobs)
             next_perc = potential_perc.pop(0)
             try:
                 ans = Parallel(n_jobs=n_jobs, verbose=5, max_nbytes=None)(
-                    delayed(calc_ARI_pv_vec)(num_of_genes, next_perc, ST, simulated_samples) for num_of_genes in results['num_of_genes'])
+                    delayed(calc_ARI_pv_vec)(num_of_genes, next_perc, CT, simulated_samples) for num_of_genes in results['num_of_genes'])
             except Exception as ex:
                 print(f"Error - unable to perform parallel computing due to: {ex}")
                 print(f"Running serial computation instead")
                 ans = []
                 for num_of_genes in results['num_of_genes']:
-                    a = calc_ARI_pv_vec(num_of_genes, next_perc, ST, simulated_samples)
+                    a = calc_ARI_pv_vec(num_of_genes, next_perc, CT, simulated_samples)
                     ans = ans + [a]
             _next = parse_ans(ans, next_perc, simulated_samples)
             next_better = is_next_better(_best["ARI_vec"], _next["ARI_vec"])
@@ -112,7 +112,7 @@ def find_threshold(results, ST, percentiles_to_check, simulated_samples, n_jobs)
     return pd.DataFrame(res)
 
 
-def hierarchical_clustering(ST, x, num_of_genes, gene_importance, linkage_method, percentiles, find_thresh,
+def hierarchical_clustering(CT, x, num_of_genes, gene_importance, linkage_method, percentiles, find_percentile,
                             percentiles_to_check, simulated_samples):
     res = {'num_of_genes': num_of_genes}
     curr_genes = gene_importance['gene'][0:num_of_genes]
@@ -120,17 +120,18 @@ def hierarchical_clustering(ST, x, num_of_genes, gene_importance, linkage_method
     distances = pdist(X=curr_x, metric=c.DISTANCE_METRIC)
     z = linkage(y=distances, method=linkage_method)
 
-    if find_thresh:
+    if find_percentile:
+        # save percentiles and thresholds as temp files
         percentiles = percentiles_to_check
         thresholds = np.percentile(a=distances, q=percentiles)
         save_temp_files(percentiles, thresholds, z, num_of_genes)
-        # In case 'find_recommended_thresh' = True ---> percentiles 0.5 and 1 are calculated as a baseline
+        # percentiles 0.5 and 1 are calculated as a baseline
         percentiles = percentiles[:2]
-        predicted_ST_lst = [fcluster(Z=z, t=t, criterion='distance') for t in thresholds[:2]]
+        thresholds = thresholds[:2]
     else:
         thresholds = np.percentile(a=distances, q=percentiles)
-        predicted_ST_lst = [fcluster(Z=z, t=t, criterion='distance') for t in thresholds]
-    calc_ARI_pv(res, ST, predicted_ST_lst, percentiles, simulated_samples)
+    predicted_ST_lst = [fcluster(Z=z, t=t, criterion='distance') for t in thresholds]
+    calc_ARI_pv(res, CT, predicted_ST_lst, percentiles, thresholds, simulated_samples)
 
     return res
 

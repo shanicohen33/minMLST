@@ -28,7 +28,7 @@ setup(
                      "machine-learning algorithms and approaches such as XGBoost, distance-based hierarchical " +
                      "clustering, and SHAP. \nminMLST quantifies the importance level of each gene in an MLST " +
                      "scheme and allows the user to investigate the trade-off between minimizing the number " +
-                     "of genes in the scheme vs preserving a high resolution among strain types.\n\n " +
+                     "of genes in the scheme vs preserving a high resolution among strains.\n\n " +
                      "See more information in [GitHub](https://github.com/shanicohen33/minMLST).",
     long_description_content_type="text/markdown",
     url="https://github.com/shanicohen33/minMLST",
