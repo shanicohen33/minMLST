@@ -39,7 +39,7 @@ cover, total gain or total cover.
 As a pre-step, CTs (cluster types) with a single representative isolate are filtered from the dataset.
 Next, an XGBoost model is trained with parameters `max_depth`, `learning_rate`, `stopping_method` and `stopping_rounds`
 ([more information about XGBoost parameters](https://xgboost.readthedocs.io/en/latest/python/python_api.html)); 
-model's performance is evaluated by Multi-class log loss over a test set.
+model's performance is evaluated by Multi-class log loss over a validation set.
 Finally, gene importance values are measured for the trained model and provided as a DataFrame output.
 
 A data sample of Legionella pneumophila cgMLST scheme can be downloaded from 
